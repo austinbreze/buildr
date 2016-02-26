@@ -1,6 +1,7 @@
 package buildr
 
 import (
+	"io"
 	"os"
 	"log"
 
@@ -51,4 +52,25 @@ func Check(err error) bool {
 func InDir(dir string, f func() bool) bool {
 	prev, _ := os.Getwd()
 	return Check(os.Chdir(dir)) && f() && Check(os.Chdir(prev))
+}
+
+func FillFile(fname string, fill func(io.Writer) bool) bool {
+	if f, ok := CreateIfNotExists(fname); !ok {
+		return false
+	} else {
+		defer f.Close()
+		return fill(f)
+	}
+}
+
+func GoBuild() bool {
+	return Cmd(sh.Command("go", "build"))
+}
+
+func GoFmt() bool {
+	return Cmd(sh.Command("go", "fmt"))
+}
+
+func GoGenerate() bool {
+	return Cmd(sh.Command("go", "generate"))
 }
