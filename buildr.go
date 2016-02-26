@@ -2,8 +2,8 @@ package buildr
 
 import (
 	"fmt"
-	"strings"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -20,36 +20,38 @@ func short(name string) string {
 	return nm + "..."
 }
 
-type targetI interface {
+type TargetI interface {
 	modifiedSince(tm time.Time) bool
 	name() string
-	Run() bool
+	Build() bool
 }
 
 type FileTarget struct {
-	deptab map[string]targetI
-	depends []targetI
+	deptab  map[string]TargetI
+	depends []TargetI
 	files   []string
-	makef   func(... targetI) bool
+	makef   func(...TargetI) bool
 }
 
 func File(path string) *FileTarget {
-	return &FileTarget {
-		deptab: map[string]targetI{},
-		depends: []targetI{},
-		files: []string{path},
+	return &FileTarget{
+		deptab:  map[string]TargetI{},
+		depends: []TargetI{},
+		files:   []string{path},
+		makef:   func(...TargetI) bool { return true; },
 	}
 }
 
-func Files(paths... string) *FileTarget {
-	return &FileTarget {
-		deptab: map[string]targetI{},
-		depends: []targetI{},
-		files: paths,
+func Files(paths ...string) *FileTarget {
+	return &FileTarget{
+		deptab:  map[string]TargetI{},
+		depends: []TargetI{},
+		files:   paths,
+		makef:   func(...TargetI) bool { return true; },
 	}
 }
 
-func (t *FileTarget) Depends(targets... targetI) *FileTarget {
+func (t *FileTarget) Depends(targets ...TargetI) *FileTarget {
 	t.depends = append(t.depends, targets...)
 	for _, targ := range targets {
 		t.deptab[targ.name()] = targ
@@ -57,7 +59,7 @@ func (t *FileTarget) Depends(targets... targetI) *FileTarget {
 	return t
 }
 
-func (t *FileTarget) Make(run func(... targetI) bool) *FileTarget {
+func (t *FileTarget) Make(run func(...TargetI) bool) *FileTarget {
 	t.makef = run
 	return t
 }
@@ -84,7 +86,7 @@ func (t *FileTarget) modTime() time.Time {
 	for _, f := range t.files {
 		info, err := os.Stat(f)
 		if err != nil {
-			return time.Now()
+			return tm
 		}
 		tm_ := info.ModTime()
 		if tm_.After(tm) {
@@ -94,32 +96,36 @@ func (t *FileTarget) modTime() time.Time {
 	return tm
 }
 
-func (t *FileTarget) Run() bool {
+func (t *FileTarget) Build() bool {
 	tm := t.modTime()
 	modified := false
-	fmt.Println("[buildr] Make target `" + short(t.name()) + "`...")
-	defer fmt.Println("[buildr] Done `" + short(t.name()) + "`")
+	if len(t.depends) == 0 {
+		modified = true
+	}
 
-	for name, targ := range t.deptab {
+	for _, targ := range t.deptab {
+		if !targ.Build() {
+			return false
+		}
 		if targ.modifiedSince(tm) {
-			if !targ.Run() {
-				return false
-			}
 			modified = true
 		}
 	}
 
 	if modified {
+		fmt.Println("[buildr] Make target `" + short(t.name()) + "`...")
+		defer fmt.Println("[buildr] Done `" + short(t.name()) + "`")
 		return t.makef(t.depends...)
 	}
 	return true
 }
 
-func (t *FileTarget) RunTarget(name string) bool {
+func (t *FileTarget) BuildTarget(name string) bool {
 	if targ, ok := t.deptab[name]; !ok {
 		fmt.Println("[buildr] Cannot find target `" + short(name) + "`...")
 		return false
 	} else {
-		return targ.Run()
+		return targ.Build()
 	}
 }
+
