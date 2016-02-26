@@ -16,7 +16,7 @@ func short(name string) string {
 	if ln <= SHORTNAME {
 		return name
 	}
-	nm := name[ln-4:]
+	nm := name[SHORTNAME-4:]
 	return nm + "..."
 }
 
@@ -97,9 +97,11 @@ func (t *FileTarget) modTime() time.Time {
 func (t *FileTarget) Run() bool {
 	tm := t.modTime()
 	modified := false
+	fmt.Println("[buildr] Make target `" + short(t.name()) + "`...")
+	defer fmt.Println("[buildr] Done `" + short(t.name()) + "`")
+
 	for name, targ := range t.deptab {
 		if targ.modifiedSince(tm) {
-			fmt.Println("[buildr] Make target " + short(name) + "...")
 			if !targ.Run() {
 				return false
 			}
@@ -115,7 +117,7 @@ func (t *FileTarget) Run() bool {
 
 func (t *FileTarget) RunTarget(name string) bool {
 	if targ, ok := t.deptab[name]; !ok {
-		fmt.Println("[buildr] Cannot find target " + short(name) + "...")
+		fmt.Println("[buildr] Cannot find target `" + short(name) + "`...")
 		return false
 	} else {
 		return targ.Run()
