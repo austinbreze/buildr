@@ -47,3 +47,8 @@ func Check(err error) bool {
 	}
 	return true
 }
+
+func InDir(dir string, f func() bool) bool {
+	prev, _ := os.Getwd()
+	return Check(os.Chdir(dir)) && f() && Check(os.Chdir(prev))
+}
