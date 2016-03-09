@@ -2,8 +2,8 @@ package buildr
 
 import (
 	"io"
-	"os"
 	"log"
+	"os"
 
 	"github.com/codeskyblue/go-sh"
 )
@@ -59,6 +59,16 @@ func FillFile(fname string, fill func(io.Writer) bool) bool {
 		return false
 	} else {
 		defer f.Close()
+		return fill(f)
+	}
+}
+
+func AppendFile(fname string, fill func(io.Writer) bool) bool {
+	if f, ok := CreateIfNotExists(fname); !ok {
+		return false
+	} else {
+		defer f.Close()
+		f.Seek(0, 2)
 		return fill(f)
 	}
 }
