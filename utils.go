@@ -59,6 +59,7 @@ func FillFile(fname string, fill func(io.Writer) bool) bool {
 		return false
 	} else {
 		defer f.Close()
+		f.Truncate(0)
 		return fill(f)
 	}
 }
