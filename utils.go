@@ -21,11 +21,8 @@ func Exists(f string) bool {
 	return !os.IsNotExist(err)
 }
 
-func CreateIfNotExists(fname string) (*os.File, bool) {
-	f, err := os.Open(fname)
-	if os.IsNotExist(err) {
-		f, err = os.Create(fname)
-	}
+func openFile(fname string, flag int, perm os.FileMode) (*os.File, bool) {
+	f, err := os.OpenFile(fname, flag, perm)
 	if err != nil {
 		log.Fatalln(err)
 		return nil, false
@@ -55,21 +52,19 @@ func InDir(dir string, f func() bool) bool {
 }
 
 func FillFile(fname string, fill func(io.Writer) bool) bool {
-	if f, ok := CreateIfNotExists(fname); !ok {
+	if f, ok := openFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666); !ok {
 		return false
 	} else {
 		defer f.Close()
-		f.Truncate(0)
 		return fill(f)
 	}
 }
 
 func AppendFile(fname string, fill func(io.Writer) bool) bool {
-	if f, ok := CreateIfNotExists(fname); !ok {
+	if f, ok := openFile(fname, os.O_RDWR|os.O_APPEND, 0666); !ok {
 		return false
 	} else {
 		defer f.Close()
-		f.Seek(0, 2)
 		return fill(f)
 	}
 }
