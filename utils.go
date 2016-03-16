@@ -22,9 +22,9 @@ func Exists(f string) bool {
 }
 
 func CreateIfNotExists(fname string) (*os.File, bool) {
-	f, err := os.Create(fname)
-	if os.IsExist(err) {
-		f, err = os.Open(fname)
+	f, err := os.Open(fname)
+	if os.IsNotExist(err) {
+		f, err = os.Create(fname)
 	}
 	if err != nil {
 		log.Fatalln(err)
